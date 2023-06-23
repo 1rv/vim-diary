@@ -5,14 +5,12 @@ function! s:init()
     \'starttime': -1,
     \'remaining': -1,
     \'status': '',
-    \'task_line': '',
-    \'task_line_num': 0,
     \'ondone': ''
   \}
   let s:user_state = {}
 
-  if ! exists('g:tt_taskfile')
-    let g:tt_taskfile = '~/tasks'
+  if ! exists('g:tt_diaryfile')
+    let g:tt_diaryfile = '~/diary'
   endif
 
   if ! exists('g:tt_soundfile')
@@ -53,19 +51,6 @@ endfunction
 
 function! tt#clear_status()
   call s:set_state({ 'status': '' }, {})
-endfunction
-
-function! tt#get_task()
-  return s:format_task(s:state.task_line)
-endfunction
-
-function! tt#set_task(line_text, ...)
-  let l:line_num = a:0 == 0 ? 0 : a:1
-  call s:set_state({ 'task_line': a:line_text, 'task_line_num': l:line_num }, {})
-endfunction
-
-function! tt#clear_task()
-  call s:set_state({ 'task_line': '' }, {})
 endfunction
 
 function! tt#set_timer(duration)
@@ -161,134 +146,6 @@ function! tt#play_sound()
   endif
 endfunction
 
-function! tt#open_tasks()
-  if ! exists('g:tt_taskfile') || g:tt_taskfile ==# ''
-    throw 'You must set g:tt_taskfile before calling tt#open_tasks()'
-  endif
-
-  let l:taskfile = expand(g:tt_taskfile)
-  if bufwinid(l:taskfile) >= 0
-    return
-  endif
-
-  let l:original_win = bufwinid('%')
-  call s:open_file(l:taskfile)
-  if ! exists('b:tt_taskfile_initialized')
-    nnoremap <buffer> <CR> :WorkOnTask<CR>
-    let b:tt_taskfile_initialized = 1
-  endif
-  call win_gotoid(l:original_win)
-endfunction
-
-function! tt#focus_tasks()
-  let l:win_id = bufwinid(expand(g:tt_taskfile))
-
-  if l:win_id < 0
-    throw 'You must call tt#open_tasks() before calling tt#focus_tasks()'
-  endif
-
-  call win_gotoid(l:win_id)
-endfunction
-
-function! tt#can_be_task(line_text)
-  return s:translate_to_task_matcher(a:line_text) !=# ''
-endfunction
-
-function! tt#mark_last_task()
-  if s:state.task_line ==# '' || s:state.task_line_num == 0
-    return
-  endif
-
-  let l:taskfile = expand(g:tt_taskfile)
-  let l:task_win = bufwinid(l:taskfile)
-  if l:task_win < 0
-    throw 'You must call tt#open_tasks() before calling tt#mark_last_task()'
-  endif
-
-  let l:original_win = bufwinid('%')
-  call win_gotoid(l:task_win)
-
-  let l:line_num = s:find_matching_line()
-  if l:line_num == 0
-    echohl WarningMsg | echo "Unable to find task: " . s:format_task(s:state.task_line) | echohl None
-  else
-    call s:mark_task(l:line_num, l:line_num)
-  endif
-
-  call win_gotoid(l:original_win)
-endfunction
-
-function! tt#mark_task() range
-  if bufnr(expand(g:tt_taskfile)) !=# bufnr('%')
-    throw 'You must call tt#open_tasks() before calling tt#mark_task()'
-  endif
-
-  call s:mark_task(a:firstline, a:lastline)
-endfunction
-
-function! s:mark_task(first, last)
-  let l:orig_modified = &modified
-
-  for l:line_num in range(a:first, a:last)
-    if tt#can_be_task(getline(l:line_num))
-      call s:append_progressmark(l:line_num)
-    endif
-  endfor
-
-  if ! l:orig_modified
-    write
-  endif
-endfunction
-
-function! s:find_matching_line()
-  let l:target = s:translate_to_task_matcher(s:state.task_line)
-
-  let l:top = s:state.task_line_num
-  let l:bottom = l:top + 1
-
-  while l:top > 0 || l:bottom <= line('$')
-    if l:top > 0
-      if s:translate_to_task_matcher(getline(l:top)) ==? l:target
-        return l:top
-      endif
-      let l:top -= 1
-    endif
-
-    if l:bottom <= line('$')
-      if s:translate_to_task_matcher(getline(l:bottom)) ==? l:target
-        return l:bottom
-      endif
-      let l:bottom += 1
-    endif
-  endwhile
-
-  return 0
-endfunction
-
-function! s:format_task(line)
-  let l:result = a:line
-  let l:result = substitute(l:result, '^\s*\%(\W\+\s\+\)\?\(.\{-}\)\%(\s\+\W\+\)\?\W*$', '\1', '')
-  let l:result = substitute(l:result, '\s\+', ' ', 'g')
-  return l:result
-endfunction
-
-function! s:translate_to_task_matcher(line)
-  return s:trim(substitute(a:line, '\W\+', ' ', 'g'))
-endfunction
-
-function! s:append_progressmark(line_num)
-  let l:line = getline(a:line_num)
-  if strcharpart(l:line, strchars(l:line) - 1, 1) ==# g:tt_progressmark
-    call setline(a:line_num, l:line . g:tt_progressmark)
-  else
-    call setline(a:line_num, l:line . " " . g:tt_progressmark)
-  endif
-endfunction
-
-function! s:trim(str)
-  return substitute(a:str, '^\s*\(.\{-}\)\s*$', '\1', '')
-endfunction
-
 function! s:format_duration_display(duration)
   return '[' . s:format_duration(a:duration) . ']'
 endfunction
@@ -359,9 +216,7 @@ function! s:read_state()
         \'starttime': l:state[1],
         \'remaining': l:state[2],
         \'status': l:state[3],
-        \'task_line': l:state[4],
-        \'task_line_num': l:state[5],
-        \'ondone': l:state[6],
+        \'ondone': l:state[4],
       \}
       let s:user_state = eval(l:state[7])
     endif
@@ -382,20 +237,10 @@ function! s:set_state(script_state, user_state)
     \s:state.starttime,
     \s:state.remaining,
     \s:state.status,
-    \s:state.task_line,
-    \s:state.task_line_num,
     \s:state.ondone,
     \string(s:user_state),
   \]
   call writefile(l:state, expand(g:tt_statefile))
-endfunction
-
-function! s:open_file(filename)
-  if s:is_new_buffer()
-    execute 'edit' a:filename
-  else
-    execute 'botright' 'vsplit' a:filename
-  endif
 endfunction
 
 function! s:is_new_buffer()
@@ -415,6 +260,35 @@ function! s:tick(timer)
   doautocmd <nomodeline> User TtTick
 endfunction
 
+function! tt#open_diary()
+  if ! exists('g:tt_diary') || g:tt_diary ==# ''
+    throw 'You must set g:tt_diary before calling tt#open_dairy()'
+  endif
+
+  let l:diaryfile = expand(g:tt_diaryfile)
+  if bufwinid(l:diaryfile) >= 0
+    return
+  endif
+
+  let l:original_win = bufwinid('%')
+  call s:open_file(l:taskdiary)
+  if ! exists('b:tt_diaryfile_initialized')
+    nnoremap <buffer> <CR> :Work<CR>
+    let b:tt_diaryfile_initialized = 1
+  endif
+  call win_gotoid(l:original_win)
+endfunction
+
+function! tt#focus_diary()
+  let l:win_id = bufwinid(expand(g:tt_diaryfile))
+
+  if l:win_id < 0
+    throw 'You must call tt#open_diary() before calling tt#focus_diary()'
+  endif
+
+  call win_gotoid(l:win_id)
+endfunction
+
 function! s:use_defaults()
   command! Work
     \  call tt#set_timer(25)
@@ -424,21 +298,7 @@ function! s:use_defaults()
 
   command! AfterWork
     \  call tt#play_sound()
-    \| call tt#open_tasks()
-    \| Break
-
-  command! WorkOnTask
-    \  if tt#can_be_task(getline('.'))
-    \|   call tt#set_task(getline('.'), line('.'))
-    \|   execute 'Work'
-    \|   echomsg "Current task: " . tt#get_task()
-    \|   call tt#when_done('AfterWorkOnTask')
-    \| endif
-
-  command! AfterWorkOnTask
-    \  call tt#play_sound()
-    \| call tt#open_tasks()
-    \| call tt#mark_last_task()
+    \| call tt#open_diary()
     \| Break
 
   command! Break call Break()
@@ -454,7 +314,6 @@ function! s:use_defaults()
       call tt#set_state('break-count', l:count + 1)
     endif
     call tt#start_timer()
-    call tt#clear_task()
     call tt#when_done('AfterBreak')
   endfunction
 
@@ -465,11 +324,10 @@ function! s:use_defaults()
 
   command! ClearTimer
     \  call tt#clear_status()
-    \| call tt#clear_task()
     \| call tt#clear_timer()
 
   command! -range MarkTask <line1>,<line2>call tt#mark_task()
-  command! OpenTasks call tt#open_tasks() <Bar> call tt#focus_tasks()
+  command! OpenDiary call tt#open_diary() <Bar> call tt#focus_diary()
   command! -nargs=1 SetTimer call tt#set_timer(<f-args>)
   command! ShowTimer echomsg tt#get_remaining_full_format() . " " . tt#get_status_formatted() . " " . tt#get_task()
   command! ToggleTimer call tt#toggle_timer()
