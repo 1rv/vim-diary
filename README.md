@@ -1,16 +1,15 @@
 # tt.vim
 
-Task timer for Vim. Exposes the building blocks so you can implement your own task tracking method, whether that is Pomodoro or something of your own creation.
+Timer with diary for Vim. Exposes the building blocks so you can implement your own diary, whether that is Pomodoro or something of your own creation.
 
 ![screenshot](images/screenshot.png)
 
 Features at a glance:
 
-- Adds a timer to the status line (requires [vim-airline][vim-airline])
+- Adds a timer to the status line (requires [vim-airline][vim-airline] - fixed as of 6/23/2023)
 - Audible bell support
 - Timer state persists even if you re-start Vim
-- Integrates with your existing task list
-- Can auto-append a progress mark when the timer finishes
+- Automatically opens your diary file and writes a time header
 - Configurable duration (and every other setting for that matter!)
 - Supports Vim 8 and Neovim
 
@@ -22,21 +21,21 @@ Short answer: the task list.
 
 One aspect of the Pomodoro Technique is writing down the tasks you want to work on and then add a checkmark each time you complete a work interval for a given task. Now… many people who use the Pomodoro Technique don't worry about task lists and checkmarks. That is perfectly fine IMO. If that describes you, then you probably won't get much mileage out of tt.vim.
 
-However, if you do like to keep a task list—and you have heard the gospel of Vim—then the idea of being able to maintain your task list using the best *modal* editor on the planet might appeal to you. Doubly so if you are already working in Vim all the time.
+I have forked this from [vim-tt][vim-tt], which is a task tracker. I learned that I don't really need the task tracker, and prefer to just write a short summary of what I did in the last work period, which helps me stay on track and log progress. If you do not need this function, then it would be best to not use the defaults - I will implement in the future a second set of default options that just have the Pomodoro timer.
 
-Building a task timer in Vim offers one other big advantage—scriptability. It is easy to adopt a "productivity" method and stick with it for a few days. But making it work over the long term? The only time it works for me is when I adapt the system to my circumstances and needs. tt.vim tries to make it possible for you to do that.
+Why a diary? It keeps me on track, and reminds me that when the work session is done I should've made some progress. It's not a good feeling to write that in the last work session you've spent the whole time browsing the internet. If you are working in vim very often, having an integrated feature may be appealing to you.
 
 ## Installing
 
 Use your [favorite plugin manager](https://vi.stackexchange.com/questions/613/how-do-i-install-a-plugin-in-vim-vi). For example, for [vim-plug](https://github.com/junegunn/vim-plug):
 
 ```viml
-Plug 'mkropat/vim-tt'
+Plug '1rv/vim-diary'
 ```
 
 __Pre-requisite__: To get status line support, you must also have [vim-airline][vim-airline] installed.
 
-If you just want to get started quickly, add the following to your `.vimrc` and restart Vim:
+If you just want to get started quickly, add the following to your `.vimrc` and restart Vim: these settings include the diary functionality (opens the diary at the end of every work session).
 
 ```viml
 let g:tt_use_defaults = 1
@@ -99,23 +98,6 @@ The status field represents what the current timer is for. Are you "working"? On
 | `tt#set_status(status)`     | Set a new status                                                  |
 | `tt#clear_status()`         | Reset the status back to the initial empty state                  |
 
-### Tasks
-
-Optionally, you can set a task, which is a free-form text string. It can be used to note what specifically you are working on.
-
-tt.vim also has the concept of a task file. The task file is meant to be a single text file where you list out any tasks that you want to work on. The text file can (in theory) be in any file format, so long as each task is on its own line.
-
-| Function                        | Description                                                       |
-| ------------------------------- | ----------------------------------------------------------------- |
-| `tt#get_task()`                 | Return the text that was last set using `set_task`                |
-| `tt#set_task(text, [line_num])` | Set `text` as the current task. If `line_num` is passed and `text` represents that entire line, then `mark_last_task` is able to be used. |
-| `tt#clear_task()`               | Removes the current task.                                         |
-| `tt#open_tasks()`               | Open a window showing the `g:tt_taskfile` file.                   |
-| `tt#focus_tasks()`              | Focus the window opened by `open_tasks`.                          |
-| `tt#can_be_task(text)`          | Returns 1 if `text` is a markable task, 0 otherwise.              |
-| `tt#mark_task()`                | Appends a `g:tt_progressmark` character to the current line. Accepts a Vim range to mark multiple lines at the same time. |
-| `tt#mark_last_task()`           | Instead of appending `g:tt_progressmark` to the current line, append it to the line/`line_num` passed to `set_task`. It should be smart enough to mark the right line, even if you added/removed lines in the meanwhile. |
-
 ### State
 
 To help support advanced workflows, tt.vim exposes a general mechanism for storing custom data. You don't have to use it—you can always use Vim variables instead. However, the advantage of using these functions is that any data stored will persist and be available when you restart Vim, just like tt.vim's builtin state.
@@ -138,7 +120,7 @@ To help support advanced workflows, tt.vim exposes a general mechanism for stori
 | `g:tt_progressmark` | `†`               | The character to append to a line when calling `tt#mark_task()`
 | `g:tt_soundfile`    | `bell.wav`        | The sound file to play when calling `tt#play_sound()`. `.wav` files should work on all platforms. Other formats may be supported on your specific platform.
 | `g:tt_statefile`    | `VIMDIR/tt.state` | Where tt.vim stores its state, so that when you restart Vim everything resumes where you left off.
-| `g:tt_taskfile`     | `~/tasks`         | The file to open when calling `tt#open_tasks()`, etc.
+| `g:tt_diaryfile`    | `~/diary`         | The file to open when calling `tt#open_diary()`, etc.
 | `g:tt_use_defaults` | &lt;empty&gt;     | If set to `1`, get the pre-defined commands and key bindings (see [defaults](#defaults))
 
 Settings can be overridden in your `~/.vimrc` file. For, example to enable `g:tt_use_defaults`, you would add the following line:
@@ -153,30 +135,18 @@ let g:tt_use_defaults = 1
 
 If you enable `g:tt_use_defaults` you will get the following commands and key mappings. If it works for you, great. If not, feel free to copy this set up as a starting point and tweak it as you see fit.
 
-```viml
+```
 command! Work
-  \  call tt#set_timer(25)
+  \  call tt#set_timer(1)
   \| call tt#start_timer()
   \| call tt#set_status('working')
   \| call tt#when_done('AfterWork')
 
 command! AfterWork
   \  call tt#play_sound()
-  \| call tt#open_tasks()
-  \| Break
-
-command! WorkOnTask
-  \  if tt#can_be_task(getline('.'))
-  \|   call tt#set_task(getline('.'), line('.'))
-  \|   execute 'Work'
-  \|   echomsg "Current task: " . tt#get_task()
-  \|   call tt#when_done('AfterWorkOnTask')
-  \| endif
-
-command! AfterWorkOnTask
-  \  call tt#play_sound()
-  \| call tt#open_tasks()
-  \| call tt#mark_last_task()
+  \| call tt#open_diary()
+  \| call tt#focus_diary()
+  \| call tt#write_time()
   \| Break
 
 command! Break call Break()
@@ -192,7 +162,6 @@ function! Break()
     call tt#set_state('break-count', l:count + 1)
   endif
   call tt#start_timer()
-  call tt#clear_task()
   call tt#when_done('AfterBreak')
 endfunction
 
@@ -203,22 +172,20 @@ command! AfterBreak
 
 command! ClearTimer
   \  call tt#clear_status()
-  \| call tt#clear_task()
   \| call tt#clear_timer()
 
 command! -range MarkTask <line1>,<line2>call tt#mark_task()
-command! OpenTasks call tt#open_tasks() <Bar> call tt#focus_tasks()
+command! OpenDiary call tt#open_diary() <Bar> call tt#focus_diary()
 command! -nargs=1 SetTimer call tt#set_timer(<f-args>)
 command! ShowTimer echomsg tt#get_remaining_full_format() . " " . tt#get_status_formatted() . " " . tt#get_task()
 command! ToggleTimer call tt#toggle_timer()
 
 nnoremap <Leader>tb :Break<cr>
-nnoremap <Leader>tm :MarkTask<cr>
-xnoremap <Leader>tm :MarkTask<cr>
 nnoremap <Leader>tp :ToggleTimer<cr>
 nnoremap <Leader>ts :ShowTimer<cr>
-nnoremap <Leader>tt :OpenTasks<cr>
+nnoremap <Leader>tt :OpenDiary<cr>
 nnoremap <Leader>tw :Work<cr>
+call tt#set_status('ready')viml
 ```
 
 ## Limitations
