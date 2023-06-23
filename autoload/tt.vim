@@ -272,7 +272,7 @@ function! tt#open_diary()
 
   let l:original_win = bufwinid('%')
   "call s:open_file(l:diaryfile)
-  execute "30vsplit " . l:diaryfile
+  execute "40vsplit " . l:diaryfile
   if ! exists('b:tt_diaryfile_initialized')
     nnoremap <buffer> <CR> :Work<CR>
     let b:tt_diaryfile_initialized = 1
@@ -290,6 +290,12 @@ function! tt#focus_diary()
   call win_gotoid(l:win_id)
 endfunction
 
+function! tt#write_time()
+  let l:last_line_num = line("$")
+  let l:line = getline(l:last_line_num)
+  call setline(l:last_line_num, l:line . "\n\nDATE")
+endfunction
+
 function! s:use_defaults()
   command! Work
     \  call tt#set_timer(1)
@@ -300,6 +306,8 @@ function! s:use_defaults()
   command! AfterWork
     \  call tt#play_sound()
     \| call tt#open_diary()
+    \| call tt#focus_diary()
+    \| call tt#write_time()
     \| Break
 
   command! Break call Break()
