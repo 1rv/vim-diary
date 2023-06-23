@@ -261,7 +261,7 @@ function! s:tick(timer)
 endfunction
 
 function! tt#open_diary()
-  if ! exists('g:tt_diary') || g:tt_diary ==# ''
+  if ! exists('g:tt_diaryfile') || g:tt_diaryfile ==# ''
     throw 'You must set g:tt_diary before calling tt#open_dairy()'
   endif
 
