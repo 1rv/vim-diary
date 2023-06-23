@@ -293,7 +293,7 @@ endfunction
 function! tt#write_time()
   let l:test_first = line("$")
   if l:test_first != 1
-    execute 'normal! GAa'
+    execute 'normal! GAa'
   endif
   let l:last_line_num = line("$")
   let l:date = strftime("|%A %x - %I:%M%p|")
