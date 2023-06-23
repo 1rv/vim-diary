@@ -1,4 +1,4 @@
-# tt.vim
+# diary.vim
 
 Timer with diary for Vim. Exposes the building blocks so you can implement your own diary, whether that is Pomodoro or something of your own creation.
 
