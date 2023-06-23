@@ -299,9 +299,11 @@ function! diary#write_time()
   let l:date = strftime("|%A %x - %I:%M%p|")
   call setline(l:last_line_num, date)
   execute 'normal! GA'
+endfunction
 
-  match dateHead /\v\|([^|]+)\|/
-  execute 'highlight dateHead guifg = lightblue'
+function! diary#highligh_diary()
+  match dateHeader /\_^\v\|([^|]+)\|/
+  execute 'highlight dateHeader guifg = lightred'
 endfunction
 
 function! s:use_defaults()
@@ -315,6 +317,7 @@ function! s:use_defaults()
     \  call diary#play_sound()
     \| call diary#open_diary()
     \| call diary#focus_diary()
+    \| call diary#highlight_diary()
     \| call diary#write_time()
     \| Break
 
@@ -344,7 +347,7 @@ function! s:use_defaults()
     \| call diary#clear_timer()
 
   command! -range MarkTask <line1>,<line2>call diary#mark_task()
-  command! OpenDiary call diary#open_diary() <Bar> call diary#focus_diary()
+  command! OpenDiary call diary#open_diary() <Bar> call diary#focus_diary() <Bar> call diary#highlight_diary()
   command! -nargs=1 SetTimer call diary#set_timer(<f-args>)
   command! ShowTimer echomsg diary#get_remaining_full_format() . " " . diary#get_status_formatted() . " " . diary#get_task()
   command! ToggleTimer call diary#toggle_timer()
