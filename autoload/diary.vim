@@ -301,7 +301,7 @@ function! diary#write_time()
   execute 'normal! GA'
 endfunction
 
-function! diary#highligh_diary()
+function! diary#highlight_diary()
   match dateHeader /\_^\v\|([^|]+)\|/
   execute 'highlight dateHeader guifg = lightred'
 endfunction
