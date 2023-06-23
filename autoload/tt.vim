@@ -294,7 +294,7 @@ function! tt#write_time()
   execute 'normal! GA'
   let l:last_line_num = line("$")
   let l:date = strftime("|%A %x - %I:%M%p|")
-  setline(l:last_line_num, date)
+  call setline(l:last_line_num, date)
   execute 'normal! GA'
 endfunction
 
