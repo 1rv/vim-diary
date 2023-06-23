@@ -299,6 +299,9 @@ function! diary#write_time()
   let l:date = strftime("|%A %x - %I:%M%p|")
   call setline(l:last_line_num, date)
   execute 'normal! GA'
+
+  match dateHead /\v\|([^|]+)\|/
+  execute 'highlight dateHead guifg = lightblue'
 endfunction
 
 function! s:use_defaults()
