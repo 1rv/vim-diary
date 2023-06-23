@@ -291,7 +291,7 @@ endfunction
 
 function! s:use_defaults()
   command! Work
-    \  call tt#set_timer(25)
+    \  call tt#set_timer(1)
     \| call tt#start_timer()
     \| call tt#set_status('working')
     \| call tt#when_done('AfterWork')
@@ -333,11 +333,9 @@ function! s:use_defaults()
   command! ToggleTimer call tt#toggle_timer()
 
   nnoremap <Leader>tb :Break<cr>
-  nnoremap <Leader>tm :MarkTask<cr>
-  xnoremap <Leader>tm :MarkTask<cr>
   nnoremap <Leader>tp :ToggleTimer<cr>
   nnoremap <Leader>ts :ShowTimer<cr>
-  nnoremap <Leader>tt :OpenTasks<cr>
+  nnoremap <Leader>tt :OpenDiary<cr>
   nnoremap <Leader>tw :Work<cr>
 endfunction
 
