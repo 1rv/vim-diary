@@ -271,7 +271,8 @@ function! tt#open_diary()
   endif
 
   let l:original_win = bufwinid('%')
-  call s:open_file(l:diaryfile)
+  "call s:open_file(l:diaryfile)
+  call vsplit l:diaryfile
   if ! exists('b:tt_diaryfile_initialized')
     nnoremap <buffer> <CR> :Work<CR>
     let b:tt_diaryfile_initialized = 1
