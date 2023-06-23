@@ -32,7 +32,7 @@ function! airline#extensions#tt#get()
     call add(parts, status)
   endif
 
-  return 'this is a test'
+  return join('status: ', parts)
 endfunction
 
 augroup TtAirline
