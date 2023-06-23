@@ -10,7 +10,6 @@ let s:spc = g:airline_symbols.space
 
 function! airline#extensions#tt#init(ext)
   call airline#parts#define_raw('tt', '%{airline#extensions#tt#get()}')
-
   call a:ext.add_statusline_func('airline#extensions#tt#apply')
 endfunction
 
@@ -20,7 +19,7 @@ function! airline#extensions#tt#apply(...)
 endfunction
 
 function! airline#extensions#tt#get()
-  let parts = []
+  let parts = ['status:']
 
   let remaining = tt#get_remaining_smart_format()
   if remaining !=# ''
@@ -32,7 +31,7 @@ function! airline#extensions#tt#get()
     call add(parts, status)
   endif
 
-  return join('status: ', parts)
+  return join(parts, ' ')
 endfunction
 
 augroup TtAirline
