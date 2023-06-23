@@ -337,6 +337,7 @@ function! s:use_defaults()
   nnoremap <Leader>ts :ShowTimer<cr>
   nnoremap <Leader>tt :OpenDiary<cr>
   nnoremap <Leader>tw :Work<cr>
+  call tt#set_status('ready')
 endfunction
 
 call s:init()
