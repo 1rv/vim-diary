@@ -303,7 +303,7 @@ endfunction
 
 function! s:use_defaults()
   command! Work
-    \  call diary#set_timer(1)
+    \  call diary#set_timer(25)
     \| call diary#start_timer()
     \| call diary#set_status('working')
     \| call diary#when_done('AfterWork')
