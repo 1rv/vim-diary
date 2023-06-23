@@ -291,7 +291,10 @@ function! tt#focus_diary()
 endfunction
 
 function! tt#write_time()
-  execute 'normal! GA'
+  let l:test_first = line("$")
+  if ! l:test_first == 1
+    execute 'normal! GA'
+  endif
   let l:last_line_num = line("$")
   let l:date = strftime("|%A %x - %I:%M%p|")
   call setline(l:last_line_num, date)
