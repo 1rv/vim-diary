@@ -9,91 +9,91 @@ function! s:init()
   \}
   let s:user_state = {}
 
-  if ! exists('g:tt_diaryfile')
-    let g:tt_diaryfile = '~/diary'
+  if ! exists('g:diary_diaryfile')
+    let g:diary_diaryfile = '~/diary'
   endif
 
-  if ! exists('g:tt_soundfile')
-    let g:tt_soundfile = s:plugin_dir . '/' . 'bell.wav'
+  if ! exists('g:diary_soundfile')
+    let g:diary_soundfile = s:plugin_dir . '/' . 'bell.wav'
   endif
 
-  if ! exists('g:tt_statefile')
-    let g:tt_statefile = s:get_vimdir() . '/' . 'tt.state'
+  if ! exists('g:diary_statefile')
+    let g:diary_statefile = s:get_vimdir() . '/' . 'diary.state'
   endif
 
-  if ! exists('g:tt_progressmark')
-    let g:tt_progressmark = '†'
+  if ! exists('g:diary_progressmark')
+    let g:diary_progressmark = '†'
   endif
 
   call s:read_state()
 
-  if exists('g:tt_use_defaults') && g:tt_use_defaults
+  if exists('g:diary_use_defaults') && g:diary_use_defaults
     call s:use_defaults()
   endif
 
   call timer_start(1000, function('s:tick'), { 'repeat': -1 })
 endfunction
 
-function! tt#get_status()
+function! diary#get_status()
   return s:state.status
 endfunction
 
-function! tt#get_status_formatted()
+function! diary#get_status_formatted()
   if s:state.status ==# ''
     return s:state.status
   endif
   return '|' . s:state.status . '|'
 endfunction
 
-function! tt#set_status(status)
+function! diary#set_status(status)
   call s:set_state({ 'status': a:status }, {})
 endfunction
 
-function! tt#clear_status()
+function! diary#clear_status()
   call s:set_state({ 'status': '' }, {})
 endfunction
 
-function! tt#set_timer(duration)
-  let l:was_running = tt#is_running() && tt#get_remaining() > 0
-  call tt#pause_timer()
+function! diary#set_timer(duration)
+  let l:was_running = diary#is_running() && diary#get_remaining() > 0
+  call diary#pause_timer()
   call s:set_state({ 'remaining': s:parse_duration(a:duration) }, {})
   if l:was_running
-    call tt#start_timer()
+    call diary#start_timer()
   endif
 endfunction
 
-function! tt#start_timer()
-  if tt#get_remaining() >= 0
+function! diary#start_timer()
+  if diary#get_remaining() >= 0
     call s:set_state({ 'starttime': localtime() }, {})
   endif
 endfunction
 
-function! tt#is_running()
+function! diary#is_running()
   return s:state.starttime >= 0
 endfunction
 
-function! tt#pause_timer()
-  call s:set_state({ 'starttime': -1, 'remaining': tt#get_remaining() }, {})
+function! diary#pause_timer()
+  call s:set_state({ 'starttime': -1, 'remaining': diary#get_remaining() }, {})
 endfunction
 
-function! tt#toggle_timer()
-  if tt#is_running()
-    call tt#pause_timer()
+function! diary#toggle_timer()
+  if diary#is_running()
+    call diary#pause_timer()
   else
-    call tt#start_timer()
+    call diary#start_timer()
   endif
 endfunction
 
-function! tt#clear_timer()
+function! diary#clear_timer()
   call s:set_state({ 'starttime': -1, 'remaining': -1, 'ondone': '' }, {})
 endfunction
 
-function! tt#when_done(ondone)
+function! diary#when_done(ondone)
   call s:set_state({ 'ondone': a:ondone }, {})
 endfunction
 
-function! tt#get_remaining()
-  if ! tt#is_running()
+function! diary#get_remaining()
+  if ! diary#is_running()
     return s:state.remaining
   endif
 
@@ -102,14 +102,14 @@ function! tt#get_remaining()
   return l:difference < 0 ? 0 : l:difference
 endfunction
 
-function! tt#get_remaining_full_format()
-  let l:remaining = tt#get_remaining()
+function! diary#get_remaining_full_format()
+  let l:remaining = diary#get_remaining()
   return s:format_duration_display(l:remaining)
 endfunction
 
-function! tt#get_remaining_smart_format()
-  let l:remaining = tt#get_remaining()
-  if tt#is_running()
+function! diary#get_remaining_smart_format()
+  let l:remaining = diary#get_remaining()
+  if diary#is_running()
     return s:format_abbrev_duration(l:remaining)
   else
     return l:remaining < 0
@@ -118,20 +118,20 @@ function! tt#get_remaining_smart_format()
   endif
 endfunction
 
-function! tt#get_state(key, default)
+function! diary#get_state(key, default)
   return has_key(s:user_state, a:key)
     \? s:user_state[a:key]
     \: a:default
 endfunction
 
-function! tt#set_state(key, value)
+function! diary#set_state(key, value)
   let l:user_state = {}
   let l:user_state[a:key] = a:value
   call s:set_state({}, l:user_state)
 endfunction
 
-function! tt#play_sound()
-  let l:soundfile = expand(g:tt_soundfile)
+function! diary#play_sound()
+  let l:soundfile = expand(g:diary_soundfile)
   if ! filereadable(l:soundfile)
     return
   endif
@@ -209,9 +209,9 @@ function! s:parse_duration(duration)
 endfunction
 
 function! s:read_state()
-  if filereadable(expand(g:tt_statefile))
-    let l:state = readfile(expand(g:tt_statefile))
-    if l:state[0] ==# 'tt.v3' && len(l:state) == 8
+  if filereadable(expand(g:diary_statefile))
+    let l:state = readfile(expand(g:diary_statefile))
+    if l:state[0] ==# 'diary.v3' && len(l:state) == 8
       let s:state = {
         \'starttime': l:state[1],
         \'remaining': l:state[2],
@@ -233,14 +233,14 @@ function! s:set_state(script_state, user_state)
   endfor
 
   let l:state = [
-    \'tt.v3',
+    \'diary.v3',
     \s:state.starttime,
     \s:state.remaining,
     \s:state.status,
     \s:state.ondone,
     \string(s:user_state),
   \]
-  call writefile(l:state, expand(g:tt_statefile))
+  call writefile(l:state, expand(g:diary_statefile))
 endfunction
 
 function! s:is_new_buffer()
@@ -251,7 +251,7 @@ function! s:is_new_buffer()
 endfunction
 
 function! s:tick(timer)
-  if s:state.ondone !=# '' && tt#is_running() && tt#get_remaining() == 0
+  if s:state.ondone !=# '' && diary#is_running() && diary#get_remaining() == 0
     let l:ondone = s:state.ondone
     call s:set_state({ 'ondone': '' }, {})
     execute l:ondone
@@ -260,12 +260,12 @@ function! s:tick(timer)
   doautocmd <nomodeline> User TtTick
 endfunction
 
-function! tt#open_diary()
-  if ! exists('g:tt_diaryfile') || g:tt_diaryfile ==# ''
-    throw 'You must set g:tt_diary before calling tt#open_dairy()'
+function! diary#open_diary()
+  if ! exists('g:diary_diaryfile') || g:diary_diaryfile ==# ''
+    throw 'You must set g:diary_diaryfile before calling diary#open_diary()'
   endif
 
-  let l:diaryfile = expand(g:tt_diaryfile)
+  let l:diaryfile = expand(g:diary_diaryfile)
   if bufwinid(l:diaryfile) >= 0
     return
   endif
@@ -273,24 +273,24 @@ function! tt#open_diary()
   let l:original_win = bufwinid('%')
   "call s:open_file(l:diaryfile)
   execute "40vsplit " . l:diaryfile
-  if ! exists('b:tt_diaryfile_initialized')
+  if ! exists('b:diary_diaryfile_initialized')
     nnoremap <buffer> <CR> :Work<CR>
-    let b:tt_diaryfile_initialized = 1
+    let b:diary_diaryfile_initialized = 1
   endif
   call win_gotoid(l:original_win)
 endfunction
 
-function! tt#focus_diary()
-  let l:win_id = bufwinid(expand(g:tt_diaryfile))
+function! diary#focus_diary()
+  let l:win_id = bufwinid(expand(g:diary_diaryfile))
 
   if l:win_id < 0
-    throw 'You must call tt#open_diary() before calling tt#focus_diary()'
+    throw 'You must call diary#open_diary() before calling diary#focus_diary()'
   endif
 
   call win_gotoid(l:win_id)
 endfunction
 
-function! tt#write_time()
+function! diary#write_time()
   let l:test_first = line("$")
   if l:test_first != 1
     execute 'normal! GAa'
@@ -303,55 +303,55 @@ endfunction
 
 function! s:use_defaults()
   command! Work
-    \  call tt#set_timer(1)
-    \| call tt#start_timer()
-    \| call tt#set_status('working')
-    \| call tt#when_done('AfterWork')
+    \  call diary#set_timer(1)
+    \| call diary#start_timer()
+    \| call diary#set_status('working')
+    \| call diary#when_done('AfterWork')
 
   command! AfterWork
-    \  call tt#play_sound()
-    \| call tt#open_diary()
-    \| call tt#focus_diary()
-    \| call tt#write_time()
+    \  call diary#play_sound()
+    \| call diary#open_diary()
+    \| call diary#focus_diary()
+    \| call diary#write_time()
     \| Break
 
   command! Break call Break()
   function! Break()
-    let l:count = tt#get_state('break-count', 0)
+    let l:count = diary#get_state('break-count', 0)
     if l:count >= 3
-      call tt#set_timer(15)
-      call tt#set_status('long break')
-      call tt#set_state('break-count', 0)
+      call diary#set_timer(15)
+      call diary#set_status('long break')
+      call diary#set_state('break-count', 0)
     else
-      call tt#set_timer(5)
-      call tt#set_status('break')
-      call tt#set_state('break-count', l:count + 1)
+      call diary#set_timer(5)
+      call diary#set_status('break')
+      call diary#set_state('break-count', l:count + 1)
     endif
-    call tt#start_timer()
-    call tt#when_done('AfterBreak')
+    call diary#start_timer()
+    call diary#when_done('AfterBreak')
   endfunction
 
   command! AfterBreak
-    \  call tt#play_sound()
-    \| call tt#set_status('ready')
-    \| call tt#clear_timer()
+    \  call diary#play_sound()
+    \| call diary#set_status('ready')
+    \| call diary#clear_timer()
 
   command! ClearTimer
-    \  call tt#clear_status()
-    \| call tt#clear_timer()
+    \  call diary#clear_status()
+    \| call diary#clear_timer()
 
-  command! -range MarkTask <line1>,<line2>call tt#mark_task()
-  command! OpenDiary call tt#open_diary() <Bar> call tt#focus_diary()
-  command! -nargs=1 SetTimer call tt#set_timer(<f-args>)
-  command! ShowTimer echomsg tt#get_remaining_full_format() . " " . tt#get_status_formatted() . " " . tt#get_task()
-  command! ToggleTimer call tt#toggle_timer()
+  command! -range MarkTask <line1>,<line2>call diary#mark_task()
+  command! OpenDiary call diary#open_diary() <Bar> call diary#focus_diary()
+  command! -nargs=1 SetTimer call diary#set_timer(<f-args>)
+  command! ShowTimer echomsg diary#get_remaining_full_format() . " " . diary#get_status_formatted() . " " . diary#get_task()
+  command! ToggleTimer call diary#toggle_timer()
 
   nnoremap <Leader>tb :Break<cr>
   nnoremap <Leader>tp :ToggleTimer<cr>
   nnoremap <Leader>ts :ShowTimer<cr>
   nnoremap <Leader>tt :OpenDiary<cr>
   nnoremap <Leader>tw :Work<cr>
-  call tt#set_status('ready')
+  call diary#set_status('ready')
 endfunction
 
 call s:init()
