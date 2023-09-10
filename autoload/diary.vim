@@ -5,7 +5,8 @@ function! s:init()
     \'starttime': -1,
     \'remaining': -1,
     \'status': '',
-    \'ondone': ''
+    \'ondone': '',
+    \'worklength': -1
   \}
   let s:user_state = {}
 
@@ -60,6 +61,10 @@ function! diary#set_timer(duration)
   if l:was_running
     call diary#start_timer()
   endif
+endfunction
+
+function! diary#set_worklength(duration)
+  call s:set_state({ 'worklength': s:parse_duration(a:duration) }, {})
 endfunction
 
 function! diary#start_timer()
@@ -211,14 +216,23 @@ endfunction
 function! s:read_state()
   if filereadable(expand(g:diary_statefile))
     let l:state = readfile(expand(g:diary_statefile))
-    if l:state[0] ==# 'diary.v3' && len(l:state) == 8
+    if l:state[0] ==# 'diary.v4'
       let s:state = {
         \'starttime': l:state[1],
         \'remaining': l:state[2],
         \'status': l:state[3],
         \'ondone': l:state[4],
+        \'worklength': l:state[5]
       \}
-      let s:user_state = eval(l:state[7])
+    endif
+    if l:state[0] ==# 'diary.v3'
+      let s:state = {
+        \'starttime': l:state[1],
+        \'remaining': l:state[2],
+        \'status': l:state[3],
+        \'ondone': l:state[4],
+        \'worklength': -1
+      \}
     endif
   endif
 endfunction
@@ -233,11 +247,12 @@ function! s:set_state(script_state, user_state)
   endfor
 
   let l:state = [
-    \'diary.v3',
+    \'diary.v4',
     \s:state.starttime,
     \s:state.remaining,
     \s:state.status,
     \s:state.ondone,
+    \s:state.worklength,
     \string(s:user_state),
   \]
   call writefile(l:state, expand(g:diary_statefile))
@@ -296,7 +311,7 @@ function! diary#write_time()
     execute 'normal! GAa'
   endif
   let l:last_line_num = line("$")
-  let l:date = strftime("|%A %x - %I:%M%p|")
+  let l:date = strftime("|%A %x - %I:%M%p|") . ' - ' . s:format_abbrev_duration(s:state.worklength)
   call setline(l:last_line_num, date)
   execute 'normal! GA'
 endfunction
@@ -309,6 +324,7 @@ endfunction
 function! s:use_defaults()
   command! Work
     \  call diary#set_timer(25)
+    \| call diary#set_worklength(25)
     \| call diary#start_timer()
     \| call diary#set_status('working')
     \| call diary#when_done('AfterWork')
